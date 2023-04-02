@@ -371,37 +371,75 @@ def forcingOnRows(hanjieMatrix, sideClues):
 
     for row in range(matrixHeight):
 
-        finalRow = []
         matrixRow = hanjieMatrix.getMatrixRow(row)
         clues = sideClues.getSideCluesByIndex(row)
 
-        lengthOfSequencesOfSpacesFromStart = []
-        counter = 0
+        finalRow = []
+        anyNonSpacesMet = False
+        sequenceLength = 0
+        amountOfOtherNonSpaces = 0  # ones that are not counted in sequenceLength
+
         print(matrixRow)
         print(matrixWidth)
-        for box in range(matrixWidth):
-            if matrixRow[box] == -1:
-                counter += 1
-            else:
-                if counter != 0:
-                    lengthOfSequencesOfSpacesFromStart.append(counter)
-                counter = 0
 
-        if counter != 0:
-            lengthOfSequencesOfSpacesFromStart.append(counter)
-        print(lengthOfSequencesOfSpacesFromStart)
-
-        indexOfSpace = 0
-        anySpacesMet = False
         for box in range(matrixWidth):
-            for i in range(1, len(clues) + 1):
-                if matrixRow[box] == -1:
-                    anySpacesMet = True
-                    if box <= clues[:i] and matrixWidth - box - lengthOfSequencesOfSpacesFromStart[indexOfSpace]:
-                        pass
+            if matrixRow[box] == -1 and anyNonSpacesMet:
+                if sequenceLength < clues[0]:
+                    finalRow = [-1] * box
+                    hanjieMatrix.updateMatrix(row, -1, finalRow)
                 else:
-                    if indexOfSpace != 0:
-                        indexOfSpace += 1
+                    for i in range(box, matrixWidth):
+                        if matrixRow[i] != -1:
+                            amountOfOtherNonSpaces += 1
+                    if amountOfOtherNonSpaces < len(clues) - 1 + sum(clues):
+                        try:
+                            if sequenceLength < clues[0] + clues[1] + 1:
+                                if sequenceLength > (sequenceLength - clues[0]) * 2:
+                                    finalRow = (box - sequenceLength) * [-1] + (sequenceLength - clues[0]) * [0] + (
+                                            sequenceLength - (sequenceLength - clues[0]) * 2) * [1]
+                                    hanjieMatrix.updateMatrix(row, -1, finalRow)
+                        except IndexError:
+                            if sequenceLength > (sequenceLength - clues[0]) * 2:
+                                finalRow = (box - sequenceLength) * [-1] + (sequenceLength - clues[0]) * [0] + (
+                                        sequenceLength - (sequenceLength - clues[0]) * 2) * [1]
+                                hanjieMatrix.updateMatrix(row, -1, finalRow)
+                break
+            elif matrixRow[box] == 0 or matrixRow[box] == 1:
+                sequenceLength += 1
+                anyNonSpacesMet = True
+
+        finalRow = []               # All the variables are set to initial values, because same
+        anyNonSpacesMet = False     # algorithm implemented, but from left side of the row
+        sequenceLength = 0
+        amountOfOtherNonSpaces = 0
+
+        for box in range(matrixWidth - 1, -1, -1):
+            if matrixRow[box] == -1 and anyNonSpacesMet:
+                if sequenceLength < clues[-1]:
+                    finalRow = [0] * box + [-1] * (matrixWidth - box)
+                    hanjieMatrix.updateMatrix(row, -1, finalRow)
+                else:
+                    for i in range(box, matrixWidth):
+                        if matrixRow[i] != -1:
+                            amountOfOtherNonSpaces += 1
+                    if amountOfOtherNonSpaces < len(clues) - 1 + sum(clues):
+                        try:
+                            if sequenceLength < clues[-1] + clues[-2] + 1:
+                                if sequenceLength > (sequenceLength - clues[-1]) * 2:
+                                    finalRow = (box + 1) * [0]
+                                    finalRow = (box - sequenceLength) * [-1] + (sequenceLength - clues[0]) * [0] + (
+                                            sequenceLength - (sequenceLength - clues[0]) * 2) * [1]
+                                    hanjieMatrix.updateMatrix(row, -1, finalRow)
+                        except IndexError:
+                            if sequenceLength > (sequenceLength - clues[0]) * 2:
+                                finalRow = (box - sequenceLength) * [-1] + (sequenceLength - clues[0]) * [0] + (
+                                        sequenceLength - (sequenceLength - clues[0]) * 2) * [1]
+                                hanjieMatrix.updateMatrix(row, -1, finalRow)
+                break
+
+            elif matrixRow[box] == 0 or matrixRow[box] == 1:
+                sequenceLength += 1
+                anyNonSpacesMet = True
 
 
 def main():
