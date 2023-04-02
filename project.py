@@ -201,9 +201,6 @@ def simpleBoxesOnRows(hanjieMatrix, sideClues):
         boxesToTheRight = [0] * (matrixWidth - len(boxesToTheLeft)) + boxesToTheLeft
         boxesToTheLeft += [0] * (matrixWidth - len(boxesToTheLeft))
 
-        print(boxesToTheLeft)
-        print(boxesToTheRight)
-
         isBetweenSpaces = False
         anyBlocksMet = False
 
@@ -244,8 +241,6 @@ def simpleBoxesOnColumns(hanjieMatrix, topClues):
 
         boxesToTheBottom = [0] * (matrixHeight - len(boxesToTheTop)) + boxesToTheTop
         boxesToTheTop += [0] * (matrixHeight - len(boxesToTheTop))
-
-        print(boxesToTheTop, boxesToTheBottom)
 
         isBetweenSpaces = False
         anyBlocksMet = False
@@ -379,9 +374,6 @@ def forcingOnRows(hanjieMatrix, sideClues):
         sequenceLength = 0
         amountOfOtherNonSpaces = 0  # ones that are not counted in sequenceLength
 
-        print(matrixRow)
-        print(matrixWidth)
-
         for box in range(matrixWidth):
             if matrixRow[box] == -1 and anyNonSpacesMet:
                 if sequenceLength < clues[0]:
@@ -408,8 +400,8 @@ def forcingOnRows(hanjieMatrix, sideClues):
                 sequenceLength += 1
                 anyNonSpacesMet = True
 
-        finalRow = []               # All the variables are set to initial values, because same
-        anyNonSpacesMet = False     # algorithm implemented, but from left side of the row
+        finalRow = []  # All the variables are set to initial values, because same
+        anyNonSpacesMet = False  # algorithm implemented, but from left side of the row
         sequenceLength = 0
         amountOfOtherNonSpaces = 0
 
@@ -419,21 +411,20 @@ def forcingOnRows(hanjieMatrix, sideClues):
                     finalRow = [0] * box + [-1] * (matrixWidth - box)
                     hanjieMatrix.updateMatrix(row, -1, finalRow)
                 else:
-                    for i in range(box, matrixWidth):
+                    for i in range(box, -1, -1):
                         if matrixRow[i] != -1:
                             amountOfOtherNonSpaces += 1
                     if amountOfOtherNonSpaces < len(clues) - 1 + sum(clues):
                         try:
                             if sequenceLength < clues[-1] + clues[-2] + 1:
                                 if sequenceLength > (sequenceLength - clues[-1]) * 2:
-                                    finalRow = (box + 1) * [0]
-                                    finalRow = (box - sequenceLength) * [-1] + (sequenceLength - clues[0]) * [0] + (
-                                            sequenceLength - (sequenceLength - clues[0]) * 2) * [1]
+                                    finalRow = (box + 1) * [0] + (sequenceLength - clues[-1]) * [0] + (
+                                            sequenceLength - (sequenceLength - clues[-1]) * 2) * [1]
                                     hanjieMatrix.updateMatrix(row, -1, finalRow)
                         except IndexError:
-                            if sequenceLength > (sequenceLength - clues[0]) * 2:
-                                finalRow = (box - sequenceLength) * [-1] + (sequenceLength - clues[0]) * [0] + (
-                                        sequenceLength - (sequenceLength - clues[0]) * 2) * [1]
+                            if sequenceLength > (sequenceLength - clues[-1]) * 2:
+                                finalRow = (box + 1) * [0] + (sequenceLength - clues[-1]) * [0] + (
+                                        sequenceLength - (sequenceLength - clues[-1]) * 2) * [1]
                                 hanjieMatrix.updateMatrix(row, -1, finalRow)
                 break
 
@@ -448,14 +439,34 @@ def main():
 
     hanjieMatrix = HanjieMatrix(topClues.getSize(), sideClues.getSize(), [])
     hanjieMatrix.initializeFreeMatrix()
+    hanjieMatrix.outputMatrix()
+    print('niger')
     fullRow(hanjieMatrix, sideClues)
+    hanjieMatrix.outputMatrix()
+    print('niger')
     fullColumn(hanjieMatrix, topClues)
+    hanjieMatrix.outputMatrix()
+    print('niger')
+
     simpleBoxesOnRows(hanjieMatrix, sideClues)
+    hanjieMatrix.outputMatrix()
+    print('niger')
+
     simpleBoxesOnColumns(hanjieMatrix, topClues)
+    hanjieMatrix.outputMatrix()
+    print('niger')
+
     simpleSpacesOnRows(hanjieMatrix, sideClues)
+    hanjieMatrix.outputMatrix()
+    print('niger')
+
     simpleSpacesOnColumns(hanjieMatrix, topClues)
+    hanjieMatrix.outputMatrix()
+    print('niger')
+
     forcingOnRows(hanjieMatrix, sideClues)
     hanjieMatrix.outputMatrix()
+    print('niger')
 
 
 main()
