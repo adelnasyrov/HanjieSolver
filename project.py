@@ -55,7 +55,7 @@ class HanjieMatrix:  # A class that stores an answer to user's puzzle.
                 elif self._matrix[i][j] == -1:  # in case box is a space it outputs a blue square
                     print('🟦', end="")
                 else:
-                    print('🟥', end="")  # in case box is not defined yet it outputs a red square
+                    print('🟥', end="")  # in case box is not defined yet, it outputs a red square
             print()
 
 
@@ -169,12 +169,12 @@ def fullRow(hanjieMatrix, sideClues):  # this solution technique fills rows
                     finalRow += [-1]
                 finalRow += sideClues.getCluesByIndex(row)[clue] * [1]
 
-            hanjieMatrix.updateMatrix(row, -1, finalRow)  # updates hanjieMatrix' row
+            hanjieMatrix.updateMatrix(row, -1, finalRow)  # updates hanjieMatrix's row
 
-        if sum(sideClues.getCluesByIndex(row)) == 0:
+        if sideClues.getSumOfCluesInARowByIndex(row) == 0:
             finalRow = [-1] * matrixWidth
 
-            hanjieMatrix.updateMatrix(row, -1, finalRow)  # updates hanjieMatrix' row
+            hanjieMatrix.updateMatrix(row, -1, finalRow)  # updates hanjieMatrix's row
 
 
 def fullColumn(hanjieMatrix, topClues):  # does absolutely same thing as fullRow but to columns now
@@ -237,7 +237,7 @@ def simpleBoxesOnRows(hanjieMatrix, sideClues):  # Simple Boxes technique coded
                 row) < 2.0 and spacesMet == 0:
                 finalRow[i] = 1
 
-        hanjieMatrix.updateMatrix(row, -1, finalRow)  # updates hanjieMatrix' row
+        hanjieMatrix.updateMatrix(row, -1, finalRow)  # updates hanjieMatrix's row
 
 
 def simpleBoxesOnColumns(hanjieMatrix, topClues):  # Simple boxes for columns
@@ -289,46 +289,81 @@ def simpleSpacesOnRows(hanjieMatrix, sideClues):
 
     for row in range(matrixHeight):
 
-        finalRow = []  # finalRow set to be blank and any blocks determined wil be added
         matrixRow = hanjieMatrix.getMatrixRow(row)  # stores matrix's row to analyze existing blocks and spaces
         clues = sideClues.getCluesByIndex(row)  # clues for particular column imported from SideClues
+        finalRow = []  # finalRow set to be blank and any blocks determined wil be added
         lengthOfSequenceOfBlocksFromStart = 0  # stores length of the first pattern of blocks met
 
-        for box in range(len(matrixRow)):  # counts lengthOfSequenceOfBlocksFromStart
+        for box in range(matrixWidth):  # counts lengthOfSequenceOfBlocksFromStart
             if matrixRow[box] == 1:
                 lengthOfSequenceOfBlocksFromStart += 1
             elif lengthOfSequenceOfBlocksFromStart != 0:
                 break
 
-        for box in range(len(matrixRow)):  # determines what are new spaces
-            if matrixRow[box] == 1:
-                if len(clues) == 1 and lengthOfSequenceOfBlocksFromStart != 0:
-                    finalRow = (box - (clues[0] - lengthOfSequenceOfBlocksFromStart)) * [-1] + min(
-                        lengthOfSequenceOfBlocksFromStart + (clues[0] - lengthOfSequenceOfBlocksFromStart) * 2,
-                        matrixWidth) * [0]
-                    finalRow += (matrixWidth - len(finalRow)) * [-1]
-                elif box <= clues[0]:
-                    finalRow += (box - (clues[0] - lengthOfSequenceOfBlocksFromStart)) * [-1]
-                break
-        hanjieMatrix.updateMatrix(row, -1, finalRow)
+        boxesPatternMetLength = 0
+        maxBoxesPatternMetLength = 0
+        previousSpace = -1  # stores previous space index
 
-        lengthOfSequenceOfBlocksFromEnd = 0  # same algorithm applied but from the back of matrixRow
+        for box in range(matrixWidth):  # determines what are new spaces
+
+            if matrixRow[box] == 1:
+
+                maxBoxesPatternMetLength = max(boxesPatternMetLength, maxBoxesPatternMetLength)
+
+                if maxBoxesPatternMetLength < clues[0] + 1:
+                    amountOfSpaces = max(box + lengthOfSequenceOfBlocksFromStart - clues[0], previousSpace + 1)
+                    finalRow = amountOfSpaces * [-1] + (box - amountOfSpaces) * [0] + (
+                            clues[0] - (box - amountOfSpaces)) * [1]
+                    hanjieMatrix.updateMatrix(row, -1, finalRow)
+
+                break
+
+            elif matrixRow[box] == 0:
+                boxesPatternMetLength += 1
+            else:
+                previousSpace = box
+                boxesPatternMetLength += 1
+                maxBoxesPatternMetLength = max(boxesPatternMetLength, maxBoxesPatternMetLength)
+                boxesPatternMetLength = 0
+
+        reversedMatrixRow = matrixRow.copy()[::-1]  # same algorithm applied but from the back of matrixRow
+        reversedClues = sideClues.getCluesByIndex(row).copy()[::-1]
         finalRow = []
+        lengthOfSequenceOfBlocksFromEnd = 0
 
-        for box in range(len(matrixRow) - 1, -1, -1):
-            if matrixRow[box] == 1:
+        for box in range(matrixWidth):  # counts lengthOfSequenceOfBlocksFromStart
+            if reversedMatrixRow[box] == 1:
                 lengthOfSequenceOfBlocksFromEnd += 1
-            elif matrixRow[box] == 0 and lengthOfSequenceOfBlocksFromEnd != 0:
+            elif lengthOfSequenceOfBlocksFromEnd != 0:
                 break
 
-        for box in range(len(matrixRow) - 1, -1, -1):
-            if matrixRow[box] == 1:
-                if len(matrixRow) - box - 1 <= clues[-1]:
-                    finalRow += ((len(matrixRow) - box - 1) - (clues[-1] - lengthOfSequenceOfBlocksFromStart)) * [-1]
+        boxesPatternMetLength = 0
+        maxBoxesPatternMetLength = 0
+        previousSpace = -1  # stores previous space index
+
+        for box in range(matrixWidth):  # determines what are new spaces
+
+            if reversedMatrixRow[box] == 1:
+
+                maxBoxesPatternMetLength = max(boxesPatternMetLength, maxBoxesPatternMetLength)
+
+                if maxBoxesPatternMetLength < reversedClues[0] + 1:
+                    amountOfSpaces = max(box + lengthOfSequenceOfBlocksFromEnd - reversedClues[0], previousSpace + 1)
+                    finalRow = amountOfSpaces * [-1] + (box - amountOfSpaces) * [0] + (
+                            reversedClues[0] - (box - amountOfSpaces)) * [1]
+                    finalRow += [0] * (matrixWidth - len(finalRow))
+                    hanjieMatrix.updateMatrix(row, -1, finalRow[::-1])
+
                 break
 
-        finalRow = [0] * (matrixWidth - len(finalRow)) + finalRow
-        hanjieMatrix.updateMatrix(row, -1, finalRow)
+            elif reversedMatrixRow[box] == 0:
+                boxesPatternMetLength += 1
+            else:
+                previousSpace = box
+                boxesPatternMetLength += 1
+
+                maxBoxesPatternMetLength = max(boxesPatternMetLength, maxBoxesPatternMetLength)
+                boxesPatternMetLength = 0
 
 
 def simpleSpacesOnColumns(hanjieMatrix, topClues):  # same algorithm as simpleSpacesOnRow but on columns
@@ -337,47 +372,81 @@ def simpleSpacesOnColumns(hanjieMatrix, topClues):  # same algorithm as simpleSp
 
     for column in range(matrixWidth):
 
+        matrixColumn = hanjieMatrix.getMatrixColumn(column)  # stores matrix's row to analyze existing blocks and spaces
+        clues = topClues.getCluesByIndex(column)  # clues for particular column imported from SideClues
+        finalColumn = []  # finalRow set to be blank and any blocks determined wil be added
+        lengthOfSequenceOfBlocksFromTop = 0  # stores length of the first pattern of blocks met
+
+        for box in range(matrixHeight):  # counts lengthOfSequenceOfBlocksFromStart
+            if matrixColumn[box] == 1:
+                lengthOfSequenceOfBlocksFromTop += 1
+            elif lengthOfSequenceOfBlocksFromTop != 0:
+                break
+
+        boxesPatternMetLength = 0
+        maxBoxesPatternMetLength = 0
+        previousSpace = -1  # stores previous space index
+
+        for box in range(matrixHeight):  # determines what are new spaces
+
+            if matrixColumn[box] == 1:
+
+                maxBoxesPatternMetLength = max(boxesPatternMetLength, maxBoxesPatternMetLength)
+
+                if maxBoxesPatternMetLength < clues[0] + 1:
+                    amountOfSpaces = max(box + lengthOfSequenceOfBlocksFromTop - clues[0], previousSpace + 1)
+                    finalColumn = amountOfSpaces * [-1] + (box - amountOfSpaces) * [0] + (
+                            clues[0] - (box - amountOfSpaces)) * [1]
+                    hanjieMatrix.updateMatrix(-1, column, finalColumn)
+
+                break
+
+            elif matrixColumn[box] == 0:
+                boxesPatternMetLength += 1
+            else:
+                previousSpace = box
+                boxesPatternMetLength += 1
+
+                maxBoxesPatternMetLength = max(boxesPatternMetLength, maxBoxesPatternMetLength)
+                boxesPatternMetLength = 0
+
+        reversedMatrixColumn = matrixColumn.copy()[::-1]  # same algorithm applied but from the back of matrixRow
+        reversedClues = topClues.getCluesByIndex(column).copy()[::-1]
         finalColumn = []
-        matrixColumn = hanjieMatrix.getMatrixColumn(column)
-        clues = topClues.getCluesByIndex(column)
-        lengthOfSequenceOfOnesFromTop = 0
-        lengthOfSequenceOfOnesFromBottom = 0
+        lengthOfSequenceOfBlocksFromBottom = 0
 
-        for box in range(len(matrixColumn)):
-            if matrixColumn[box] == 1:
-                lengthOfSequenceOfOnesFromTop += 1
-            elif lengthOfSequenceOfOnesFromTop != 0:
+        for box in range(matrixHeight):  # counts lengthOfSequenceOfBlocksFromStart
+            if reversedMatrixColumn[box] == 1:
+                lengthOfSequenceOfBlocksFromBottom += 1
+            elif lengthOfSequenceOfBlocksFromBottom != 0:
                 break
 
-        for box in range(len(matrixColumn) - 1, -1, -1):
-            if matrixColumn[box] == 1:
-                lengthOfSequenceOfOnesFromBottom += 1
-            elif matrixColumn[box] == 0 and lengthOfSequenceOfOnesFromBottom != 0:
+        boxesPatternMetLength = 0
+        maxBoxesPatternMetLength = 0
+        previousSpace = -1  # stores previous space index
+
+        for box in range(matrixHeight):  # determines what are new spaces
+
+            if reversedMatrixColumn[box] == 1:
+
+                maxBoxesPatternMetLength = max(boxesPatternMetLength, maxBoxesPatternMetLength)
+
+                if maxBoxesPatternMetLength < reversedClues[0] + 1:
+                    amountOfSpaces = max(box + lengthOfSequenceOfBlocksFromBottom - reversedClues[0], previousSpace + 1)
+                    finalColumn = amountOfSpaces * [-1] + (box - amountOfSpaces) * [0] + (
+                            reversedClues[0] - (box - amountOfSpaces)) * [1]
+                    finalColumn += [0] * (matrixWidth - len(finalColumn))
+                    hanjieMatrix.updateMatrix(-1, column, finalColumn[::-1])
+
                 break
 
-        for box in range(len(matrixColumn)):
-            if matrixColumn[box] == 1:
-                if len(clues) == 1 and lengthOfSequenceOfOnesFromTop != 0:
-                    finalColumn = (box - (clues[0] - lengthOfSequenceOfOnesFromTop)) * [-1] + min(
-                        lengthOfSequenceOfOnesFromTop + (clues[0] - lengthOfSequenceOfOnesFromTop) * 2,
-                        matrixHeight) * [0]
-                    finalColumn += (matrixHeight - len(finalColumn)) * [-1]
-                elif box <= clues[0]:
-                    finalColumn += (box - (clues[0] - lengthOfSequenceOfOnesFromTop)) * [-1]
-                break
-        hanjieMatrix.updateMatrix(-1, column, finalColumn)
-
-        finalColumn = []
-
-        for box in range(len(matrixColumn) - 1, -1, -1):
-            if matrixColumn[box] == 1:
-                if len(matrixColumn) - box - 1 <= clues[-1]:
-                    finalColumn += ((len(matrixColumn) - box - 1) - (clues[-1] - lengthOfSequenceOfOnesFromBottom)) * [
-                        -1]
-                break
-
-        finalColumn = [0] * (matrixHeight - len(finalColumn)) + finalColumn
-        hanjieMatrix.updateMatrix(-1, column, finalColumn)
+            elif reversedMatrixColumn[box] == 0:
+                boxesPatternMetLength += 1
+            else:
+                previousSpace = box
+                boxesPatternMetLength += 1
+                maxBoxesPatternMetLength = max(boxesPatternMetLength, maxBoxesPatternMetLength)
+                boxesPatternMetLength = 0
 
 
 def forcingOnRows(hanjieMatrix, sideClues):  # Forcing on rows technique coded
@@ -454,6 +523,7 @@ def forcingOnRows(hanjieMatrix, sideClues):  # Forcing on rows technique coded
 
                     if amountOfOtherNonSpaces < len(clues) - 1 + sum(clues):
                         try:
+
                             if sequenceOfNonSpacesLength < clues[-1] + clues[-2] + 1:
                                 if sequenceOfNonSpacesLength > (sequenceOfNonSpacesLength - clues[-1]) * 2:
                                     finalRow = (box + 1) * [0] + (sequenceOfNonSpacesLength - clues[-1]) * [0] + (
@@ -506,12 +576,12 @@ def forcingOnColumns(hanjieMatrix, topClues):  # same algorithm implemented as f
                         try:
                             if sequenceLength < clues[0] + clues[1] + 1:
                                 if sequenceLength > (sequenceLength - clues[0]) * 2:
-                                    finalRow = (box - sequenceLength) * [-1] + (sequenceLength - clues[0]) * [0] + (
+                                    finalColumn = (box - sequenceLength) * [-1] + (sequenceLength - clues[0]) * [0] + (
                                             sequenceLength - (sequenceLength - clues[0]) * 2) * [1]
                                     hanjieMatrix.updateMatrix(-1, column, finalColumn)
                         except IndexError:
                             if sequenceLength > (sequenceLength - clues[0]) * 2:
-                                finalRow = (box - sequenceLength) * [-1] + (sequenceLength - clues[0]) * [0] + (
+                                finalColumn = (box - sequenceLength) * [-1] + (sequenceLength - clues[0]) * [0] + (
                                         sequenceLength - (sequenceLength - clues[0]) * 2) * [1]
                                 hanjieMatrix.updateMatrix(-1, column, finalColumn)
                 break
@@ -640,7 +710,7 @@ def splittingOnRows(hanjieMatrix, sideClues):  # splitting on rows technique cod
 
         matrixRow = hanjieMatrix.getMatrixRow(row)  # a row we will be operating with
         clues = sideClues.getCluesByIndex(row)  # clues for the row implemented
-        finalRow = []  # this is gonna store all changes to existing row
+        finalRow = []  # this will store all changes to existing row
 
         patternOfBlocksLength = 0  # counts length of first pattern of blocks met
         patternOfBlocksStart = 0  # stores an index at which pattern of blocks starts
@@ -654,10 +724,10 @@ def splittingOnRows(hanjieMatrix, sideClues):  # splitting on rows technique cod
                 maxPatternOfSpacesLength = max(maxPatternOfSpacesLength, patternOfSpacesLength)
                 patternOfSpacesLength = 0
 
-            if matrixRow[box] == 0 and not anyBlocksMet:
+            elif matrixRow[box] == 0 and not anyBlocksMet:
                 patternOfSpacesLength += 1
 
-            if matrixRow[box] == 1:
+            elif matrixRow[box] == 1:
 
                 if not anyBlocksMet:
                     patternOfSpacesLength -= 1
@@ -805,11 +875,6 @@ def joiningOnRows(hanjieMatrix, sideClues):  # joining on rows technique coded
         patternOfSpacesMet = False  # finishes with blocks again, these three variables turn True when each pattern met
         secondPatternOfBlocksMet = False
 
-        # each pattern's lengths
-        firstPatternOfBlockLength = 0
-        patternOfSpacesLength = 0
-        secondPatternOfBlocksLength = 0
-
         # where the whole pattern to join starts and ends
         toJoinStart = -1
         toJoinEnd = -1
@@ -821,18 +886,16 @@ def joiningOnRows(hanjieMatrix, sideClues):  # joining on rows technique coded
                     if not firstPatternOfBlocksMet:
                         toJoinStart = box
                     firstPatternOfBlocksMet = True
-                    firstPatternOfBlockLength += 1
 
                 else:
                     secondPatternOfBlocksMet = True
 
             elif matrixRow[box] == 0:
-                if firstPatternOfBlocksMet:
-                    patternOfSpacesMet = True
-                    patternOfSpacesLength += 1
                 if secondPatternOfBlocksMet:
                     toJoinEnd = box - 1
                     break
+                elif firstPatternOfBlocksMet:
+                    patternOfSpacesMet = True
 
             elif matrixRow[box] == -1:
                 if secondPatternOfBlocksMet:
@@ -843,19 +906,85 @@ def joiningOnRows(hanjieMatrix, sideClues):  # joining on rows technique coded
                     patternOfSpacesMet = False
                     secondPatternOfBlocksMet = False
 
+        if toJoinEnd == -1 and firstPatternOfBlocksMet and patternOfSpacesMet and secondPatternOfBlocksMet:
+            toJoinEnd = matrixWidth - 1
+
         if toJoinEnd != -1:
             minClueLength = toJoinEnd - toJoinStart + 1
-            for clue in range(len(clues)):
-                if clues[clue] >= minClueLength:
-                    if sum(clues[:clue + 1]) + len(clues[:clue + 1]) - 1 > toJoinStart:
-                        # new row to update matrix built
-                        if clues[clue] == minClueLength:
-                            finalRow = [0] * (toJoinStart - 1) + [-1] * min(1, toJoinStart) + [1] * minClueLength + [-1]
-                        else:
-                            finalRow = [0] * toJoinStart + [1] * minClueLength
+            if minClueLength <= max(clues):
+                for clue in range(len(clues)):
+                    if clues[clue] >= minClueLength:
+                        if sum(clues[:clue + 1]) + len(clues[:clue + 1]) - 1 > toJoinStart > sum(clues[:clue]) + len(
+                                clues[:clue]) - 1:
+                            # new row to update matrix built
+                            if clues[clue] == minClueLength:
+                                finalRow = [0] * (toJoinStart - 1) + [-1] * min(1, toJoinStart) + [
+                                    1] * minClueLength + [-1]
+                            else:
+                                finalRow = [0] * toJoinStart + [1] * minClueLength
 
-                        hanjieMatrix.updateMatrix(row, -1, finalRow)  # hanjieMatrix's row updated
-                        break
+                            hanjieMatrix.updateMatrix(row, -1, finalRow)  # hanjieMatrix's row updated
+                            break
+
+        reversedMatrixRow = hanjieMatrix.getMatrixRow(row)[
+                            ::-1]  # row we will be working with imported from hanjieMatrix
+        reversedClues = sideClues.getCluesByIndex(row)[::-1]  # clues for the row imported
+        finalRow = []
+
+        firstPatternOfBlocksMet = False  # we are looking for a pattern that start with blocks, then spaces and
+        patternOfSpacesMet = False  # finishes with blocks again, these three variables turn True when each pattern met
+        secondPatternOfBlocksMet = False
+
+        # where the whole pattern to join starts and ends
+        toJoinStart = -1
+        toJoinEnd = -1
+
+        for box in range(matrixWidth):
+
+            if reversedMatrixRow[box] == 1:
+                if not patternOfSpacesMet:
+                    if not firstPatternOfBlocksMet:
+                        toJoinStart = box
+                    firstPatternOfBlocksMet = True
+
+                else:
+                    secondPatternOfBlocksMet = True
+
+            elif reversedMatrixRow[box] == 0:
+                if secondPatternOfBlocksMet:
+                    toJoinEnd = box - 1
+                    break
+                elif firstPatternOfBlocksMet:
+                    patternOfSpacesMet = True
+
+            elif reversedMatrixRow[box] == -1:
+                if secondPatternOfBlocksMet:
+                    toJoinEnd = box - 1
+                    break
+                else:
+                    firstPatternOfBlocksMet = False
+                    patternOfSpacesMet = False
+                    secondPatternOfBlocksMet = False
+
+        if toJoinEnd == -1 and firstPatternOfBlocksMet and patternOfSpacesMet and secondPatternOfBlocksMet:
+            toJoinEnd = matrixWidth - 1
+
+        if toJoinEnd != -1:
+            minClueLength = toJoinEnd - toJoinStart + 1
+            if minClueLength <= max(reversedClues):
+                for clue in range(len(clues)):
+                    if reversedClues[clue] >= minClueLength:
+                        if sum(reversedClues[:clue + 1]) + len(reversedClues[:clue + 1]) - 1 > toJoinStart > sum(
+                                reversedClues[:clue]) + len(reversedClues[:clue]) - 1:
+                            # new row to update matrix built
+                            if reversedClues[clue] == minClueLength:
+                                finalRow = [0] * (toJoinStart - 1) + [-1] * min(1, toJoinStart) + [
+                                    1] * minClueLength + [-1]
+                            else:
+                                finalRow = [0] * toJoinStart + [1] * minClueLength
+
+                            hanjieMatrix.updateMatrix(row, -1, finalRow[::-1])  # hanjieMatrix's row updated
+                            break
 
 
 def joiningOnColumns(hanjieMatrix, topClues):  # same algorithm as joiningOnRows but on columns
@@ -902,19 +1031,82 @@ def joiningOnColumns(hanjieMatrix, topClues):  # same algorithm as joiningOnRows
                     patternOfSpacesMet = False
                     secondPatternOfBlocksMet = False
 
+        if toJoinEnd == -1 and firstPatternOfBlocksMet and patternOfSpacesMet and secondPatternOfBlocksMet:
+            toJoinEnd = matrixHeight - 1
+
         if toJoinEnd != -1:
             minClueLength = toJoinEnd - toJoinStart + 1
-            for clue in range(len(clues)):
-                if clues[clue] >= minClueLength:
-                    if sum(clues[:clue + 1]) + len(clues[:clue + 1]) - 1 > toJoinStart:
-                        if clues[clue] == minClueLength:
-                            finalColumn = [0] * (toJoinStart - 1) + [-1] * min(1, toJoinStart) + [1] * minClueLength + [
-                                -1]
-                        else:
-                            finalColumn = [0] * toJoinStart + [1] * minClueLength
+            if minClueLength <= max(clues):
+                for clue in range(len(clues)):
+                    if clues[clue] >= minClueLength:
+                        if sum(clues[:clue + 1]) + len(clues[:clue + 1]) - 1 > toJoinStart > sum(clues[:clue]) + len(
+                                clues[:clue]) - 1:
+                            if clues[clue] == minClueLength:
+                                finalColumn = [0] * (toJoinStart - 1) + [-1] * min(1, toJoinStart) + [
+                                    1] * minClueLength + [
+                                                  -1]
+                            else:
+                                finalColumn = [0] * toJoinStart + [1] * minClueLength
 
-                        hanjieMatrix.updateMatrix(-1, column, finalColumn)
-                        break
+                            hanjieMatrix.updateMatrix(-1, column, finalColumn)
+                            break
+
+        reversedMatrixColumn = hanjieMatrix.getMatrixColumn(column)[::-1]
+        reversedClues = topClues.getCluesByIndex(column)[::-1]
+        finalColumn = []
+
+        firstPatternOfBlocksMet = False
+        patternOfSpacesMet = False
+        secondPatternOfBlocksMet = False
+
+        toJoinStart = -1
+        toJoinEnd = -1
+
+        for box in range(matrixHeight):
+
+            if reversedMatrixColumn[box] == 1:
+                if not patternOfSpacesMet:
+                    if not firstPatternOfBlocksMet:
+                        toJoinStart = box
+                    firstPatternOfBlocksMet = True
+
+                else:
+                    secondPatternOfBlocksMet = True
+
+            elif reversedMatrixColumn[box] == 0:
+                if firstPatternOfBlocksMet:
+                    patternOfSpacesMet = True
+                if secondPatternOfBlocksMet:
+                    toJoinEnd = box - 1
+                    break
+
+            elif reversedMatrixColumn[box] == -1:
+                if secondPatternOfBlocksMet:
+                    toJoinEnd = box - 1
+                    break
+                else:
+                    firstPatternOfBlocksMet = False
+                    patternOfSpacesMet = False
+                    secondPatternOfBlocksMet = False
+
+        if toJoinEnd == -1 and firstPatternOfBlocksMet and patternOfSpacesMet and secondPatternOfBlocksMet:
+            toJoinEnd = matrixHeight - 1
+
+        if toJoinEnd != -1:
+            minClueLength = toJoinEnd - toJoinStart + 1
+            if minClueLength <= max(clues):
+                for clue in range(len(clues)):
+                    if reversedClues[clue] >= minClueLength:
+                        if sum(reversedClues[:clue + 1]) + len(reversedClues[:clue + 1]) - 1 > toJoinStart > sum(
+                                reversedClues[:clue]) + len(reversedClues[:clue]) - 1:
+                            if reversedClues[clue] == minClueLength:
+                                finalColumn = [0] * (toJoinStart - 1) + [-1] * min(1, toJoinStart) + [
+                                    1] * minClueLength + [-1]
+                            else:
+                                finalColumn = [0] * toJoinStart + [1] * minClueLength
+
+                            hanjieMatrix.updateMatrix(-1, column, finalColumn)
+                            break
 
 
 def allCluesFilledOnRows(hanjieMatrix, sideClues):  # allCluesFilledOnRows coded
@@ -935,7 +1127,7 @@ def allCluesFilledOnRows(hanjieMatrix, sideClues):  # allCluesFilledOnRows coded
             if matrixRow[box] == 1:
                 patternOfBlocks += 1
             else:
-                try:  # in case pattern of blocks doesnt fit any of clues it catches an exception and breaks the loop
+                try:  # in case pattern of blocks does not fit any of clues it catches an exception and breaks the loop
                     if patternOfBlocks != 0:
                         cluesCopy.remove(patternOfBlocks)
                         patternOfBlocks = 0
@@ -1016,7 +1208,7 @@ def allSpacesFilledOnRows(hanjieMatrix, sideClues):  # allSpacesFilledOnRows tec
                 if previousSpace != -1:
                     boxesPatternLength = box - previousSpace - 1
                     if boxesPatternLength < min(clues):
-                        finalRow = [0] * (previousSpace + 1) + [-1] * boxesPatternLength  # builds a new row up
+                        finalRow = [0] * (previousSpace + 1) + [-1] * boxesPatternLength  # builds a new row
                         hanjieMatrix.updateMatrix(row, -1, finalRow)  # updates hanjieMatrix with a new row
                     previousSpace = box
 
@@ -1058,7 +1250,7 @@ def main():  # this is main function that does all the functionality
 
     hanjieMatrix.initializeFreeMatrix()  # fills matrix with 0s
 
-    # This techniques are not dependent on existing blocks and spaces, so they can be implemented once:
+    # These techniques are not dependent on existing blocks and spaces, so they can be implemented once:
     fullRow(hanjieMatrix, sideClues)
     fullColumn(hanjieMatrix, topClues)
     simpleBoxesOnRows(hanjieMatrix, sideClues)
@@ -1066,7 +1258,7 @@ def main():  # this is main function that does all the functionality
     simpleSpacesOnRows(hanjieMatrix, sideClues)
     simpleSpacesOnColumns(hanjieMatrix, topClues)
     i = 0
-    while i <= 10:  # other techniques dependent on each other, so they all are repeated 10 times.
+    while i <= 100:  # other techniques dependent on each other, so they all are repeated 10 times.
         forcingOnRows(hanjieMatrix, sideClues)
         forcingOnColumns(hanjieMatrix, topClues)
         glueOnRows(hanjieMatrix, sideClues)
